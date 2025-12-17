@@ -1,169 +1,162 @@
-<!DOCTYPE html><html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>مولد الأسئلة الذكي</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
-body{font-family:'Tajawal',sans-serif}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لمّاح AI | النسخة الجاهزة</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #4285f4; --bg: #0b0e14; --glass: rgba(255, 255, 255, 0.07); }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); color: white; margin: 0; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
+        .container { width: 100%; max-width: 500px; padding: 20px; }
+        .card { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 25px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input[type="file"] { width: 100%; padding: 20px; border-radius: 12px; border: 2px dashed #444; background: rgba(255,255,255,0.02); color: white; cursor: pointer; }
+        button { width: 100%; padding: 16px; border-radius: 50px; border: none; background: linear-gradient(90deg, #4285f4, #9b51e0); color: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 20px; transition: 0.3s; }
+        button:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(66, 133, 244, 0.4); }
+        .option-btn { display: block; width: 100%; padding: 15px; margin: 10px 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 12px; text-align: right; cursor: pointer; font-size: 1rem; }
+        .correct { background: #15803d !important; border-color: #22c55e !important; }
+        .wrong { background: #991b1b !important; border-color: #ef4444 !important; }
+        #loading { display: none; text-align: center; margin-top: 50px; }
+        .hidden { display: none; }
+        .loader-spin { width: 50px; height: 50px; border: 5px solid #1a1f26; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-<body class="bg-gray-100 p-4">
-<div class="max-w-2xl mx-auto bg-white rounded-xl shadow p-6">
-<h1 class="text-2xl font-bold text-center text-blue-600 mb-6">🤖 مولد الأسئلة الذكي</h1><!-- رفع الملفات --><div id="upload">
-  <div class="border-2 border-dashed rounded-lg p-6 text-center bg-blue-50">
-    <input type="file" id="files" multiple accept=".pdf,.png,.jpg" class="hidden" />
-    <label for="files" class="cursor-pointer text-blue-600">اضغط لرفع PDF أو صورة</label>
-    <div id="count" class="text-sm text-gray-500 mt-2"></div>
-  </div><label class="block mt-4">عدد الأسئلة</label> <input id="qcount" type="number" value="5" min="1" class="w-full border rounded p-2" />
+<body>
 
-<button id="start" class="w-full mt-4 bg-blue-600 text-white py-3 rounded">بدء التحليل</button>
+<div class="container">
+    <h1 style="text-align: center; font-size: 2.5rem; margin-bottom: 0;">🧠 لـمّـاح</h1>
+    <p style="text-align: center; color: #888; margin-top: 5px;">مساعدك الذكي للفهم العميق</p>
+    
+    <div id="setup-screen" class="card">
+        <label style="display: block; margin-bottom: 15px; font-weight: bold;">ارفع ملف الدرس (PDF):</label>
+        <input type="file" id="pdfFile" accept="application/pdf">
+        <button onclick="processDocument()">ابدأ التحليل الآن</button>
+        <p style="font-size: 0.8rem; color: #555; margin-top: 20px; text-align: center;">المفتاح مدمج ومفعل | يعمل بواسطة Gemini 1.5 Flash</p>
+    </div>
 
-</div><!-- التحميل --><div id="loading" class="hidden text-center py-8">
-  <p id="status" class="text-gray-600">جاري المعالجة...</p>
-</div><!-- الأسئلة --><div id="quiz" class="hidden">
-  <div class="flex justify-between text-sm mb-3">
-    <span>سؤال <span id="idx">1</span></span>
-    <span>النتيجة: <span id="score">0</span></span>
-  </div>
-  <h3 id="qtext" class="font-bold mb-4"></h3>
-  <div id="opts" class="space-y-2"></div>
-  <div id="exp" class="hidden mt-4 p-3 bg-blue-50 border-r-4 border-blue-600"></div>
-  <button id="next" class="hidden w-full mt-4 bg-green-600 text-white py-2 rounded">التالي</button>
+    <div id="loading">
+        <div class="loader-spin"></div>
+        <h3 style="color: var(--primary);">جاري قراءة الملف...</h3>
+        <p id="loading-step">استخلاص النصوص وتوليد الأسئلة الذكية</p>
+    </div>
+
+    <div id="quiz-screen" class="card hidden">
+        <div id="progress" style="color: var(--primary); font-weight: bold; margin-bottom: 15px;"></div>
+        <h3 id="question-text" style="line-height: 1.6; min-height: 60px;"></h3>
+        <div id="options-box"></div>
+        <div id="explanation" class="hidden" style="margin-top:20px; padding:15px; background:rgba(66,133,244,0.1); border-right: 4px solid var(--primary); border-radius:10px; font-size: 0.95rem;"></div>
+        <button id="next-btn" class="hidden" onclick="showNextQuestion()" style="background: #222; border: 1px solid #444;">السؤال التالي ←</button>
+    </div>
 </div>
-</div><script>
-// هذا الإصدار يعمل 100% على GitHub Pages بدون أي API خارجي
 
-const filesInput = document.getElementById('files');
-const startBtn = document.getElementById('start');
-const upload = document.getElementById('upload');
-const loading = document.getElementById('loading');
-const quiz = document.getElementById('quiz');
-const countEl = document.getElementById('count');
-const statusEl = document.getElementById('status');
-const qcountInput = document.getElementById('qcount');
-const idxEl = document.getElementById('idx');
-const scoreEl = document.getElementById('score');
-const qtextEl = document.getElementById('qtext');
-const optsEl = document.getElementById('opts');
-const expEl = document.getElementById('exp');
-const nextBtn = document.getElementById('next');
+<script>
+    // الإعدادات والمفتاح
+    const GOOGLE_API_KEY = "AIzaSyD8Wx3w8A2gYUkybvLVxfZk_uKOui_cMdc"; 
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    
+    let questions = [];
+    let currentIdx = 0;
 
-let files = [];
-let questions = [];
-let current = 0;
-let score = 0;
+    async function processDocument() {
+        const fileInput = document.getElementById('pdfFile');
+        if (!fileInput.files[0]) { alert("رجاءً ارفع ملف PDF أولاً"); return; }
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('loading').style.display = 'block';
 
-filesInput.onchange = e => {
-  files = Array.from(e.target.files);
-  countEl.textContent = `تم اختيار ${files.length} ملفات`;
-};
-
-startBtn.onclick = async () => {
-  if (!files.length) return alert('اختر ملفًا أولاً');
-
-  upload.classList.add('hidden');
-  loading.classList.remove('hidden');
-
-  let text = '';
-
-  for (const f of files) {
-    statusEl.textContent = `جاري استخراج النص من ${f.name}`;
-    if (f.type === 'application/pdf') {
-      const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const c = await page.getTextContent();
-        text += c.items.map(x => x.str).join(' ') + ' ';
-      }
-    } else {
-      const r = await Tesseract.recognize(f, 'ara');
-      text += r.data.text + ' ';
+        const reader = new FileReader();
+        reader.onload = async function() {
+            try {
+                const typedarray = new Uint8Array(this.result);
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                let fullText = "";
+                // قراءة أول 5 صفحات لضمان السرعة والدقة
+                const maxPages = Math.min(pdf.numPages, 5);
+                for (let i = 1; i <= maxPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    fullText += content.items.map(item => item.str).join(" ");
+                }
+                sendToGemini(fullText);
+            } catch (e) { alert("حدث خطأ أثناء قراءة الملف"); location.reload(); }
+        };
+        reader.readAsArrayBuffer(fileInput.files[0]);
     }
-  }
 
-  statusEl.textContent = 'جاري تحليل النص بذكاء...';
+    async function sendToGemini(text) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`;
+        
+        const prompt = `أنت مساعد تعليمي خبير. حلل النص التالي واستخرج منه 5 أسئلة اختيار من متعدد باللغة العربية. 
+        ركز على قياس الفهم والربط بين المعلومات وليس مجرد الحفظ.
+        يجب أن يكون الرد بصيغة JSON نقي كقائمة كالتالي:
+        [{"q":"نص السؤال","o":["خيار1","خيار2","خيار3","خيار4"],"a":0,"e":"شرح مبسط للإجابة"}]
+        (ملاحظة: a هو مؤشر الإجابة الصحيحة يبدأ من 0). 
+        النص المستخرج: ${text.substring(0, 6000)}`;
 
-  questions = generateSmartQuestions(text, parseInt(qcountInput.value));
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
 
-  loading.classList.add('hidden');
-  quiz.classList.remove('hidden');
-  showQuestion();
-};
+            const data = await response.json();
+            let rawJson = data.candidates[0].content.parts[0].text;
+            // تنظيف أي زوائد من النص
+            rawJson = rawJson.replace(/```json/g, "").replace(/```/g, "").trim();
+            questions = JSON.parse(rawJson);
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            showQuestion();
+        } catch (error) {
+            alert("حدث خطأ في استجابة الذكاء الاصطناعي. قد يكون الملف كبيراً جداً أو النص غير واضح.");
+            location.reload();
+        }
+    }
 
-function generateSmartQuestions(text, count) {
-  // تنظيف النص
-  const sentences = text.split(/[\.؟!]/).map(s => s.trim()).filter(s => s.length > 20);
+    function showQuestion() {
+        const q = questions[currentIdx];
+        document.getElementById('progress').innerText = `تحدي الفهم: ${currentIdx + 1} من ${questions.length}`;
+        document.getElementById('question-text').innerText = q.q;
+        const box = document.getElementById('options-box');
+        box.innerHTML = "";
+        document.getElementById('explanation').classList.add('hidden');
+        document.getElementById('next-btn').classList.add('hidden');
 
-  const qs = [];
+        q.o.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(i, q.a, q.e);
+            box.appendChild(btn);
+        });
+    }
 
-  for (let i = 0; i < Math.min(count, sentences.length); i++) {
-    const s = sentences[i];
-    const words = s.split(' ').filter(w => w.length > 3);
-    if (words.length < 4) continue;
+    function checkAnswer(selected, correct, exp) {
+        const btns = document.querySelectorAll('.option-btn');
+        if (selected === correct) {
+            btns[selected].classList.add('correct');
+        } else {
+            btns[selected].classList.add('wrong');
+            btns[correct].classList.add('correct');
+        }
+        document.getElementById('explanation').innerHTML = `<strong>اللمحة الذكية:</strong> ${exp}`;
+        document.getElementById('explanation').classList.remove('hidden');
+        document.getElementById('next-btn').classList.remove('hidden');
+        btns.forEach(b => b.disabled = true);
+    }
 
-    const answer = words[Math.floor(words.length / 2)];
-    const options = shuffle([
-      answer,
-      words[0],
-      words[words.length - 1],
-      words[Math.floor(words.length / 3)]
-    ]);
-
-    qs.push({
-      question: `ما الكلمة الأنسب لإكمال المعنى في الجملة التالية؟\n"${s.replace(answer, '____')}"`,
-      options,
-      answer: options.indexOf(answer),
-      explanation: `الكلمة الصحيحة هي: ${answer}`
-    });
-  }
-
-  return qs;
-}
-
-function showQuestion() {
-  const q = questions[current];
-  idxEl.textContent = current + 1;
-  qtextEl.textContent = q.question;
-  optsEl.innerHTML = '';
-  expEl.classList.add('hidden');
-  nextBtn.classList.add('hidden');
-
-  q.options.forEach((opt, i) => {
-    const b = document.createElement('button');
-    b.className = 'w-full border p-3 rounded';
-    b.textContent = opt;
-    b.onclick = () => {
-      [...optsEl.children].forEach(x => x.disabled = true);
-      if (i === q.answer) {
-        b.classList.add('bg-green-100');
-        score++;
-        scoreEl.textContent = score;
-      } else {
-        b.classList.add('bg-red-100');
-        optsEl.children[q.answer].classList.add('bg-green-100');
-      }
-      expEl.textContent = q.explanation;
-      expEl.classList.remove('hidden');
-      nextBtn.classList.remove('hidden');
-    };
-    optsEl.appendChild(b);
-  });
-}
-
-nextBtn.onclick = () => {
-  current++;
-  if (current < questions.length) showQuestion();
-  else alert(`انتهى الاختبار! نتيجتك: ${score}/${questions.length}`);
-};
-
-function shuffle(arr) {
-  return arr.sort(() => Math.random() - 0.5);
-}
-</script></body>
+    function showNextQuestion() {
+        currentIdx++;
+        if (currentIdx < questions.length) showQuestion();
+        else {
+            alert("أحسنت! لقد أكملت مراجعة هذا الجزء بنجاح.");
+            location.reload();
+        }
+    }
+</script>
+</body>
 </html>
