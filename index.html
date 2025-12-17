@@ -1,120 +1,169 @@
 <!DOCTYPE html><html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🤖 مولد الأسئلة الذكي (مستقر)</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>مولد الأسئلة الذكي</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
 body{font-family:'Tajawal',sans-serif}
-.loader{border-top-color:#2563eb;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body class="bg-gray-100 p-4">
 <div class="max-w-2xl mx-auto bg-white rounded-xl shadow p-6">
-<h1 class="text-2xl font-bold text-center text-blue-600 mb-6">🤖 مولد الأسئلة الذكي</h1>
-<div id="upload">
-<div class="border-2 border-dashed rounded-lg p-6 text-center bg-blue-50">
-<input type="file" id="files" multiple accept=".pdf,.jpg,.png" class="hidden">
-<label for="files" class="cursor-pointer text-blue-600">اضغط لرفع PDF أو صور</label>
-<div id="count" class="text-sm text-gray-500 mt-2"></div>
-</div>
-<label class="block mt-4">عدد الأسئلة</label>
-<input id="qcount" type="number" value="5" min="1" class="w-full border rounded p-2">
-<button id="start" class="w-full mt-4 bg-blue-600 text-white py-3 rounded">بدء</button>
-</div>
-<div id="loading" class="hidden text-center py-8">
-<div class="loader border-4 border-gray-200 rounded-full w-12 h-12 mx-auto mb-3"></div>
-<p id="status">جاري المعالجة...</p>
-</div>
-<div id="quiz" class="hidden">
-<div class="flex justify-between text-sm mb-3">
-<span>سؤال <span id="idx">1</span></span>
-<span>النتيجة: <span id="score">0</span></span>
-</div>
-<h3 id="qtext" class="font-bold mb-4"></h3>
-<div id="opts" class="space-y-2"></div>
-<div id="exp" class="hidden mt-4 p-3 bg-blue-50 border-r-4 border-blue-600"></div>
-<button id="next" class="hidden w-full mt-4 bg-green-600 text-white py-2 rounded">التالي</button>
-</div>
-</div>
-<script type="module">
-import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai';document.addEventListener('DOMContentLoaded', () => { const API_KEY = "AIzaSyD8Wx3w8A2gYUkybvLVxfZk_uKOui_cMdc"; const genAI = new GoogleGenerativeAI(API_KEY); const models = ['gemini-1.5-flash-latest','gemini-1.5-pro-latest'];
+<h1 class="text-2xl font-bold text-center text-blue-600 mb-6">🤖 مولد الأسئلة الذكي</h1><!-- رفع الملفات --><div id="upload">
+  <div class="border-2 border-dashed rounded-lg p-6 text-center bg-blue-50">
+    <input type="file" id="files" multiple accept=".pdf,.png,.jpg" class="hidden" />
+    <label for="files" class="cursor-pointer text-blue-600">اضغط لرفع PDF أو صورة</label>
+    <div id="count" class="text-sm text-gray-500 mt-2"></div>
+  </div><label class="block mt-4">عدد الأسئلة</label> <input id="qcount" type="number" value="5" min="1" class="w-full border rounded p-2" />
 
-const filesInput = document.getElementById('files'); const start = document.getElementById('start'); const upload = document.getElementById('upload'); const loading = document.getElementById('loading'); const quiz = document.getElementById('quiz'); const count = document.getElementById('count'); const status = document.getElementById('status'); const qcount = document.getElementById('qcount'); const idx = document.getElementById('idx'); const qtext = document.getElementById('qtext'); const opts = document.getElementById('opts'); const exp = document.getElementById('exp'); const next = document.getElementById('next'); const scoreEl = document.getElementById('score');
+<button id="start" class="w-full mt-4 bg-blue-600 text-white py-3 rounded">بدء التحليل</button>
 
-let files = [], questions = [], i = 0, score = 0;
+</div><!-- التحميل --><div id="loading" class="hidden text-center py-8">
+  <p id="status" class="text-gray-600">جاري المعالجة...</p>
+</div><!-- الأسئلة --><div id="quiz" class="hidden">
+  <div class="flex justify-between text-sm mb-3">
+    <span>سؤال <span id="idx">1</span></span>
+    <span>النتيجة: <span id="score">0</span></span>
+  </div>
+  <h3 id="qtext" class="font-bold mb-4"></h3>
+  <div id="opts" class="space-y-2"></div>
+  <div id="exp" class="hidden mt-4 p-3 bg-blue-50 border-r-4 border-blue-600"></div>
+  <button id="next" class="hidden w-full mt-4 bg-green-600 text-white py-2 rounded">التالي</button>
+</div>
+</div><script>
+// هذا الإصدار يعمل 100% على GitHub Pages بدون أي API خارجي
+
+const filesInput = document.getElementById('files');
+const startBtn = document.getElementById('start');
+const upload = document.getElementById('upload');
+const loading = document.getElementById('loading');
+const quiz = document.getElementById('quiz');
+const countEl = document.getElementById('count');
+const statusEl = document.getElementById('status');
+const qcountInput = document.getElementById('qcount');
+const idxEl = document.getElementById('idx');
+const scoreEl = document.getElementById('score');
+const qtextEl = document.getElementById('qtext');
+const optsEl = document.getElementById('opts');
+const expEl = document.getElementById('exp');
+const nextBtn = document.getElementById('next');
+
+let files = [];
+let questions = [];
+let current = 0;
+let score = 0;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-filesInput.addEventListener('change', (e) => { files = Array.from(e.target.files); count.textContent = تم اختيار ${files.length} ملفات; });
+filesInput.onchange = e => {
+  files = Array.from(e.target.files);
+  countEl.textContent = `تم اختيار ${files.length} ملفات`;
+};
 
-start.addEventListener('click', async () => { if (!files.length) return alert('يرجى اختيار ملف أولاً'); upload.classList.add('hidden'); loading.classList.remove('hidden'); let text = '';
+startBtn.onclick = async () => {
+  if (!files.length) return alert('اختر ملفًا أولاً');
 
-for (const f of files) {
-  status.textContent = `جاري استخراج النص من ${f.name}`;
-  if (f.type === 'application/pdf') {
-    const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
-    for (let p = 1; p <= pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const c = await page.getTextContent();
-      text += c.items.map(i => i.str).join(' ');
-    }
-  } else {
-    const r = await Tesseract.recognize(f, 'ara');
-    text += r.data.text;
-  }
-}
+  upload.classList.add('hidden');
+  loading.classList.remove('hidden');
 
-status.textContent = 'جاري إنشاء الأسئلة...';
-const prompt = `أنشئ ${qcount.value} أسئلة اختيار من متعدد بالعربية.
+  let text = '';
 
-أعد النتيجة JSON فقط. النص:${text.slice(0,12000)}`;
-
-let raw;
-for (const m of models) {
-  try {
-    const model = genAI.getGenerativeModel({ model: m });
-    const r = await model.generateContent(prompt);
-    raw = r.response.text();
-    break;
-  } catch (e) {}
-}
-
-questions = JSON.parse(raw.replace(/```json|```/g, ''));
-show();
-
-});
-
-function show() { loading.classList.add('hidden'); quiz.classList.remove('hidden'); const q = questions[i]; idx.textContent = i + 1; qtext.textContent = q.question; exp.classList.add('hidden'); next.classList.add('hidden'); opts.innerHTML = '';
-
-q.options.forEach((o, ix) => {
-  const b = document.createElement('button');
-  b.className = 'w-full border p-3 rounded';
-  b.textContent = o;
-  b.onclick = () => {
-    [...opts.children].forEach(x => x.disabled = true);
-    if (ix === q.answer) {
-      b.classList.add('bg-green-100');
-      score++;
-      scoreEl.textContent = score;
+  for (const f of files) {
+    statusEl.textContent = `جاري استخراج النص من ${f.name}`;
+    if (f.type === 'application/pdf') {
+      const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const c = await page.getTextContent();
+        text += c.items.map(x => x.str).join(' ') + ' ';
+      }
     } else {
-      b.classList.add('bg-red-100');
-      opts.children[q.answer].classList.add('bg-green-100');
+      const r = await Tesseract.recognize(f, 'ara');
+      text += r.data.text + ' ';
     }
-    exp.textContent = '💡 ' + q.explanation;
-    exp.classList.remove('hidden');
-    next.classList.remove('hidden');
-  };
-  opts.appendChild(b);
-});
+  }
 
+  statusEl.textContent = 'جاري تحليل النص بذكاء...';
+
+  questions = generateSmartQuestions(text, parseInt(qcountInput.value));
+
+  loading.classList.add('hidden');
+  quiz.classList.remove('hidden');
+  showQuestion();
+};
+
+function generateSmartQuestions(text, count) {
+  // تنظيف النص
+  const sentences = text.split(/[\.؟!]/).map(s => s.trim()).filter(s => s.length > 20);
+
+  const qs = [];
+
+  for (let i = 0; i < Math.min(count, sentences.length); i++) {
+    const s = sentences[i];
+    const words = s.split(' ').filter(w => w.length > 3);
+    if (words.length < 4) continue;
+
+    const answer = words[Math.floor(words.length / 2)];
+    const options = shuffle([
+      answer,
+      words[0],
+      words[words.length - 1],
+      words[Math.floor(words.length / 3)]
+    ]);
+
+    qs.push({
+      question: `ما الكلمة الأنسب لإكمال المعنى في الجملة التالية؟\n"${s.replace(answer, '____')}"`,
+      options,
+      answer: options.indexOf(answer),
+      explanation: `الكلمة الصحيحة هي: ${answer}`
+    });
+  }
+
+  return qs;
 }
 
-next.addEventListener('click', () => { i++; if (i < questions.length) show(); else { alert(انتهى الاختبار: ${score}/${questions.length}); location.reload(); } }); }); </script>
+function showQuestion() {
+  const q = questions[current];
+  idxEl.textContent = current + 1;
+  qtextEl.textContent = q.question;
+  optsEl.innerHTML = '';
+  expEl.classList.add('hidden');
+  nextBtn.classList.add('hidden');
 
-</body>
+  q.options.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'w-full border p-3 rounded';
+    b.textContent = opt;
+    b.onclick = () => {
+      [...optsEl.children].forEach(x => x.disabled = true);
+      if (i === q.answer) {
+        b.classList.add('bg-green-100');
+        score++;
+        scoreEl.textContent = score;
+      } else {
+        b.classList.add('bg-red-100');
+        optsEl.children[q.answer].classList.add('bg-green-100');
+      }
+      expEl.textContent = q.explanation;
+      expEl.classList.remove('hidden');
+      nextBtn.classList.remove('hidden');
+    };
+    optsEl.appendChild(b);
+  });
+}
+
+nextBtn.onclick = () => {
+  current++;
+  if (current < questions.length) showQuestion();
+  else alert(`انتهى الاختبار! نتيجتك: ${score}/${questions.length}`);
+};
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+</script></body>
 </html>
